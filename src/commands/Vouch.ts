@@ -23,7 +23,7 @@ export class Vouch {
   ) {
   }
 
-  @ContextMenu({ name: "user context", type: ApplicationCommandType.User })
+  @ContextMenu({ name: "vouch", type: ApplicationCommandType.User })
   async userHandler(interaction: UserContextMenuCommandInteraction): Promise<void> {
     const member = await interaction.guild?.members.fetch(interaction.targetUser.id);
     if (member) {
