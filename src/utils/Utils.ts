@@ -36,13 +36,13 @@ export class InteractionUtils {
 export class EmbedUtils {
   public static createLogEmbed(
     interaction: CommandInteraction,
-    moderationAction: CommandActions,
+    commandAction: CommandActions,
     targetUser: GuildMember | User,
     targetRole?: string | null,
   ) {
     const role = interaction.guild?.roles.cache.get(targetRole ?? "");
     return new EmbedBuilder()
-    .setTitle(`${moderationAction}er Created`)
+    .setTitle(`${commandAction}er Created`)
     .setAuthor({
       name: `${interaction.user.tag} (${interaction.user.id})`,
       iconURL: interaction.user.avatarURL() ?? "",
@@ -51,13 +51,37 @@ export class EmbedUtils {
     .setDescription(
       `**User:** ${GuildUtils.safeMention(targetUser)}\n` +
       `**ID:** ${targetUser.id}\n\n` +
-      (moderationAction === CommandActions.Vouch
-        ? `__${moderationAction}ed for by__\n\n` +
+      (commandAction === CommandActions.Vouch
+        ? `__${commandAction}ed for by__\n\n` +
         `**User:** ${GuildUtils.safeMention(interaction.user)}\n` +
         `**ID:** ${interaction.user.id}`
         : ""),
     )
     .setThumbnail(targetUser.displayAvatarURL());
+  }
+
+  public static createBlacklistEmbed(
+    interaction: CommandInteraction,
+    evidence: string,
+    reason: string,
+    id?: string,
+    tag?: string,
+    vrcLink?: string,
+    otherAccounts?: string,
+    additionalInfo?: string,
+  ) {
+    return new EmbedBuilder()
+    .setTitle(`User Blacklisted`)
+    .setColor("Red")
+    .setDescription(
+      `**Reason:** ${reason ?? "-"}\n` +
+      `**Discord Tag:** ${tag ?? "-"}\n` +
+      `**Discord ID:** ${id ?? "-"}\n` +
+      `**VRChat Profile:** ${vrcLink ?? "-"}\n` +
+      `**Other Accounts:** ${otherAccounts ?? "-"}\n` +
+      `**Additional Info:** ${additionalInfo ?? "-"}\n` +
+      `**Evidence:** ${evidence ?? "-"}\n`,
+    );
   }
 }
 
