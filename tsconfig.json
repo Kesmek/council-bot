@@ -12,7 +12,12 @@
     "emitDecoratorMetadata": true,
 
     "skipLibCheck": false,
-    "forceConsistentCasingInFileNames": true
+    "noImplicitAny": true,
+    "sourceMap": true,
+    "declaration": false,
+    "importHelpers": true,
+    "forceConsistentCasingInFileNames": true,
+    "esModuleInterop": true
   },
   "exclude": ["build", "node_modules"]
 }
