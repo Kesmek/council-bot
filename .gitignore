@@ -9,3 +9,4 @@ yarn.lock
 build
 node_modules
 prisma/data.*
+prisma/migrations
