@@ -13,3 +13,5 @@ export enum BlacklistReasons {
   Nuking = "Nuking - Destroying established discord servers",
   Underaged = "Underaged - Below 18 years old"
 }
+
+export const BotCreator = "<@211505087653085184> (Kesmek#0001)";

@@ -3,6 +3,7 @@ import { Discord, On, Once } from "discordx";
 import { injectable } from "tsyringe";
 import { InteractionUtils } from "../utils/Utils.js";
 import { PrismaClient } from "@prisma/client";
+import { BotCreator } from "../utils/Constants.js";
 
 @Discord()
 @injectable()
@@ -71,7 +72,7 @@ export class OnReady {
           interaction,
           {
             content: `Oops, something went wrong. The best way to report this problem is to contact` +
-              ` the bot creator <@211505087653085184> (Kesmek#0001). Some helpful information` +
+              ` the bot creator ${BotCreator}. Some helpful information` +
               ` to provide to them: \`\`\`\nname: ${error.name}\n` +
               `message: ${error.message}${error?.code
                 ? `\ncode: ${error.code}`
