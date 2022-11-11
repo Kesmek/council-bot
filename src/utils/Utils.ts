@@ -9,7 +9,7 @@ import {
   PermissionsBitField,
   User,
 } from "discord.js";
-import { CommandActions } from "./Constants";
+import { CommandActions } from "./Constants.js";
 
 export class InteractionUtils {
   public static async replyOrFollowUp(
