@@ -58,6 +58,12 @@ class Anonymize {
       attachment3: Attachment | undefined,
     interaction: CommandInteraction,
   ) {
+    if (!content && !(attachment1 || attachment2 || attachment3)) {
+      return await interaction.reply({
+        content: "You must provide at least `content` or an attachment!",
+        ephemeral: true,
+      });
+    }
     const files = [];
     if (attachment1) {
       files.push(attachment1);
