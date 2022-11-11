@@ -11,6 +11,7 @@ import {
   MessageActionRowComponentBuilder,
   TextChannel,
 } from "discord.js";
+import { InteractionUtils } from "../utils/Utils.js";
 
 @Discord()
 class Anonymize {
@@ -33,25 +34,51 @@ class Anonymize {
       type: ApplicationCommandOptionType.String,
       required: false,
     })
-      content: string,
+      content: string | undefined,
     @SlashOption({
-      name: "attachment",
+      name: "attachment-1",
       description: "An attachment that you wish to anonymize",
       type: ApplicationCommandOptionType.Attachment,
       required: false,
     })
-      attachment: Attachment,
+      attachment1: Attachment | undefined,
+    @SlashOption({
+      name: "attachment-2",
+      description: "A second attachment that you wish to anonymize",
+      type: ApplicationCommandOptionType.Attachment,
+      required: false,
+    })
+      attachment2: Attachment | undefined,
+    @SlashOption({
+      name: "attachment-3",
+      description: "A third attachment that you wish to anonymize",
+      type: ApplicationCommandOptionType.Attachment,
+      required: false,
+    })
+      attachment3: Attachment | undefined,
     interaction: CommandInteraction,
   ) {
+    const files = [];
+    if (attachment1) {
+      files.push(attachment1);
+    }
+    if (attachment2) {
+      files.push(attachment2);
+    }
+    if (attachment3) {
+      files.push(attachment3);
+    }
+
     const message = await channel.send({
       content,
-      files: [attachment],
+      files,
     });
 
     const row = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(
       new ButtonBuilder().setCustomId(`delete-${channel.id}-${message.id}`)
       .setLabel("Delete")
-      .setStyle(ButtonStyle.Danger),
+      .setStyle(ButtonStyle.Danger)
+      .setEmoji("🗑"),
     );
     await interaction.reply({
       content: "Message has been sent. If this was a mistake or you'd like" +
@@ -64,14 +91,23 @@ class Anonymize {
 
   @ButtonComponent({ id: /delete-.*/ })
   async handler(interaction: ButtonInteraction): Promise<void> {
-    const [suffix, channelId, messageId] = interaction.customId.split("-");
+    const [, channelId, messageId] = interaction.customId.split("-");
 
     const channel = await interaction.guild?.channels.fetch(channelId) as TextChannel;
-    const message = await channel.messages.fetch(messageId);
-    await message.delete();
-    await interaction.reply({
-      content: "Message deleted.",
-      ephemeral: true,
-    })
+    // TODO: When deleting ephemeral messages is implemented, use that instead
+    try {
+      const message = await channel.messages.fetch(messageId);
+      await message.delete();
+      await interaction.reply({
+        content: "Message deleted.",
+        ephemeral: true,
+      });
+    } catch (e) {
+      await InteractionUtils.replyOrFollowUp(interaction, {
+        content: "Message has already been deleted! You can dismiss the" +
+          " message with the delete button now.",
+        ephemeral: true,
+      });
+    }
   }
 }
