@@ -22,11 +22,6 @@ export class Main {
       ],
       silent: false,
     };
-    // if (this.environment === "development") {
-    clientOps["botGuilds"] = [
-      (client: Client) => client.guilds.cache.map((guild) => guild.id),
-    ];
-    // }
     const bot = new Client(clientOps);
 
     if (!container.isRegistered(Client)) {

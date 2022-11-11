@@ -7,6 +7,7 @@ class Credits {
   @Slash({
     name: "credits",
     description: "Information about the creator of this bot",
+    dmPermission: true,
   })
   async credits(interaction: CommandInteraction) {
     await interaction.reply({
