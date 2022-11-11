@@ -7,17 +7,14 @@
     "strict": true,
     "moduleResolution": "Node",
     "allowSyntheticDefaultImports": true,
-
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-
-    "skipLibCheck": false,
+    "skipLibCheck": true,
     "noImplicitAny": true,
     "sourceMap": true,
     "declaration": false,
     "importHelpers": true,
     "forceConsistentCasingInFileNames": true,
     "esModuleInterop": true
-  },
-  "exclude": ["build", "node_modules"]
+  }, "exclude": ["build", "node_modules"]
 }
