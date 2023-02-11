@@ -1,3 +1,3 @@
-# Devmek
+# Council Bot
 
-This is a testing version of "Botmek" which manages a discord server for VRChat server owners.
+This is a bot meant for a server for managing VRChat clubs and blacklists from such clubs.
