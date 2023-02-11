@@ -13,7 +13,7 @@ export class GuildCreate {
   ) {
   }
 
-  @On({event: "guildCreate"})
+  @On({ event: "guildCreate" })
   private async botJoined(
     [guild]: ArgsOf<"guildCreate">,
     client: Client,
@@ -27,7 +27,7 @@ export class GuildCreate {
     await this._onReady.initAppCommands(client);
   }
 
-  @On({event: "guildDelete"})
+  @On({ event: "guildDelete" })
   private async botLeft([guild]: ArgsOf<"guildDelete">) {
     console.log("Bot Left:", guild.name);
     await this._prisma.guild.delete({

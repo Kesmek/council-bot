@@ -1,12 +1,25 @@
-import { PrismaClient } from "@prisma/client";
+import { Guild, PrismaClient } from "@prisma/client";
 import { singleton } from "tsyringe";
-import { CommandInteraction, GuildMember, TextChannel, User } from "discord.js";
+import { Colors, CommandInteraction, EmbedBuilder, GuildMember } from "discord.js";
 import { CommandActions } from "./Constants.js";
-import { EmbedUtils, InteractionUtils } from "./Utils.js";
+import { GuildUtils, NoOptionals } from "./Utils.js";
+
 
 @singleton()
 export class Logger {
+  private guild: Guild | null = null;
   constructor(private _prisma: PrismaClient) {
+  }
+
+  private getGuild = async (guildId: string): Promise<NoOptionals<Guild>> => {
+    if (!this.guild) {
+      this.guild = await this._prisma.guild.findUniqueOrThrow({
+        where: {
+          id: guildId,
+        },
+      });
+    }
+    return this.guild as NoOptionals<Guild>;
   }
 
   /**
@@ -18,33 +31,60 @@ export class Logger {
    * @param targetRole
    */
   public async log(
-    interaction: CommandInteraction,
+    interaction: CommandInteraction<"cached" | "raw">,
     moderationAction: CommandActions,
-    targetUser: GuildMember | User,
-    targetRole?: string,
-  ) {
-    const guildInfo = await this._prisma.guild.findFirst({
-      where: {
-        id: interaction.guild?.id,
-      },
-    });
-    if (!guildInfo?.moderationChannel || !guildInfo?.verifiedRole) {
-      await InteractionUtils.replyOrFollowUp(interaction, {
-        content: "An error occurred while retrieving the guild info. Please" +
-          " Contact the bot creator. Use `/credits` if you need more info on" +
-          " the creator of this bot.",
-      });
-      return null;
+    extraUser?: GuildMember,
+  ): Promise<void> {
+    const user = interaction.member as GuildMember;
+    const color = moderationAction === CommandActions.Verify ? Colors.Green : Colors.Blurple;
+    let description = `**User:** ${GuildUtils.safeMention(user)}\n**ID:** ${user.id}\n`;
+
+    if (moderationAction === CommandActions.Verify && extraUser) {
+      description += `**Invited By:** ${GuildUtils.safeMention(extraUser)}`;
     }
-    const modChannel = await interaction.guild?.channels.fetch(guildInfo.moderationChannel) as TextChannel;
-    const embed = EmbedUtils.createLogEmbed(
-      interaction,
-      moderationAction,
-      targetUser,
-      targetRole,
-    );
-    await modChannel.send({
-      embeds: [embed],
-    });
+
+    const embed = new EmbedBuilder()
+      .setTitle(moderationAction)
+      .setColor(color)
+      .setDescription(description)
+      .setThumbnail(user.displayAvatarURL());
+
+    await this.sendLog(interaction, embed);
+  }
+
+  public async warn(
+    interaction: CommandInteraction<"cached" | "raw">,
+    moderationAction: CommandActions,
+    message: string,
+    extraInfo?: string,
+  ) {
+    let user = interaction.member as GuildMember;
+    let description = `**User:** ${GuildUtils.safeMention(user)}\n**ID:** ${user.id}\n**Reason:** ${message}`;
+
+    if (extraInfo) {
+      description += `\n\n${extraInfo}`;
+    }
+
+    const embed = new EmbedBuilder()
+      .setTitle(moderationAction)
+      .setColor(Colors.Yellow)
+      .setDescription(description)
+      .setThumbnail(user.displayAvatarURL())
+
+    await this.sendLog(interaction, embed);
+  }
+
+  private async sendLog(
+    interaction: CommandInteraction<"cached" | "raw">,
+    embed: EmbedBuilder) {
+    const guild = await this.getGuild(interaction.guildId);
+    const modChannel = await interaction.guild?.channels.fetch(guild.moderationChannel);
+    if (modChannel?.isTextBased()) {
+      await modChannel?.send({
+        embeds: [embed],
+      });
+    } else {
+      console.error(`Cannot send embed to log channel (${modChannel})`);
+    }
   }
 }

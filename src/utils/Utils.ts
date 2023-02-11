@@ -1,19 +1,19 @@
 import {
+  ButtonInteraction,
   Collection,
   CommandInteraction,
-  EmbedBuilder,
   GuildMember,
-  Interaction,
   InteractionReplyOptions,
   MessageComponentInteraction,
   PermissionsBitField,
   User,
 } from "discord.js";
-import { CommandActions } from "./Constants.js";
+import { container } from "tsyringe";
+import { Guild, PrismaClient } from "@prisma/client";
 
 export class InteractionUtils {
   public static async replyOrFollowUp(
-    interaction: MessageComponentInteraction | CommandInteraction,
+    interaction: CommandInteraction | MessageComponentInteraction,
     replyOptions: InteractionReplyOptions | string,
   ): Promise<void> {
     // if interaction is already replied
@@ -33,72 +33,20 @@ export class InteractionUtils {
   }
 }
 
-export class EmbedUtils {
-  public static createLogEmbed(
-    interaction: CommandInteraction,
-    commandAction: CommandActions,
-    targetUser: GuildMember | User,
-    targetRole?: string | null,
-  ) {
-    const role = interaction.guild?.roles.cache.get(targetRole ?? "");
-    return new EmbedBuilder()
-    .setTitle(`${commandAction}er Created`)
-    .setAuthor({
-      name: `${interaction.user.tag} (${interaction.user.id})`,
-      iconURL: interaction.user.avatarURL() ?? "",
-    })
-    .setColor(role?.color ?? "Default")
-    .setDescription(
-      `**User:** ${GuildUtils.safeMention(targetUser)}\n` +
-      `**ID:** ${targetUser.id}\n\n` +
-      (commandAction === CommandActions.Vouch
-        ? `__${commandAction}ed for by__\n\n` +
-        `**User:** ${GuildUtils.safeMention(interaction.user)}\n` +
-        `**ID:** ${interaction.user.id}`
-        : ""),
-    )
-    .setThumbnail(targetUser.displayAvatarURL());
-  }
-
-  public static createBlacklistEmbed(
-    interaction: CommandInteraction,
-    evidence: string,
-    reason: string,
-    id?: string,
-    tag?: string,
-    vrcLink?: string,
-    otherAccounts?: string,
-    additionalInfo?: string,
-  ) {
-    return new EmbedBuilder()
-    .setTitle(`User Blacklisted`)
-    .setColor("Red")
-    .setDescription(
-      `**Reason:** ${reason ?? "-"}\n` +
-      `**Discord Tag:** ${tag ?? "-"}\n` +
-      `**Discord ID:** ${id ?? "-"}\n` +
-      `**VRChat Profile:** ${vrcLink ?? "-"}\n` +
-      `**Other Accounts:** ${otherAccounts ?? "-"}\n` +
-      `**Additional Info:** ${additionalInfo ?? "-"}\n` +
-      `**Evidence:** ${evidence ?? "-"}\n`,
-    );
-  }
-}
-
 export class GuildUtils {
-  public static async getAdmins(
-    interaction: Interaction,
+  public static getAdmins(
+    interaction: CommandInteraction | ButtonInteraction,
   ) {
     return interaction.guild?.members.cache.filter((member) => !member.user.bot && member.permissions.has(
-      [PermissionsBitField.Flags.BanMembers]));
+      [PermissionsBitField.Flags.BanMembers])).toJSON();
   }
 
   public static stringifyMembers(members?: Collection<string, GuildMember>) {
     if (!members) {
       return "";
     }
-    return members?.map((member) => `${member.user} (${member.user.username}#${member.user.discriminator})`)
-    .join(", ");
+    return members?.map((member) => `${member.user} (${member.user.tag})`)
+      .join(", ");
   }
 
   public static safeMention(user: User | GuildMember) {
@@ -109,3 +57,16 @@ export class GuildUtils {
     }
   }
 }
+
+export class DbUtils {
+  public static async getGuild(guildId: string): Promise<NoOptionals<Guild>> {
+    const _prisma = container.resolve(PrismaClient);
+    return await _prisma.guild.findUniqueOrThrow({
+      where: {
+        id: guildId,
+      }
+    }) as NoOptionals<Guild>;
+  }
+}
+
+export type NoOptionals<T> = { [P in keyof T]: NonNullable<T[P]> };

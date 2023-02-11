@@ -5,16 +5,19 @@
     "outDir": "build",
     "rootDir": "src",
     "strict": true,
+    "importHelpers": true,
     "moduleResolution": "Node",
     "allowSyntheticDefaultImports": true,
+    "noImplicitAny": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "skipLibCheck": true,
-    "noImplicitAny": true,
     "sourceMap": true,
-    "declaration": false,
-    "importHelpers": true,
+    "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "esModuleInterop": true
-  }, "exclude": ["build", "node_modules"]
+  },
+  "exclude": [
+    "build",
+    "node_modules"
+  ]
 }

@@ -19,9 +19,13 @@ export class Main {
       intents: [
         IntentsBitField.Flags.Guilds,
         IntentsBitField.Flags.GuildMessages,
+        IntentsBitField.Flags.DirectMessages,
       ],
       silent: false,
     };
+    if (process.env.NODE_ENV !== "production") {
+      clientOps.botGuilds = ["767817825162100757"];
+    }
     const bot = new Client(clientOps);
 
     if (!container.isRegistered(Client)) {
@@ -39,9 +43,13 @@ export class Main {
 
 try {
   await Main.start();
+  process.send?.("ready");
 } catch (e) {
   console.error(e);
-} finally {
-  container.resolve(PrismaClient)
-  .$disconnect();
-}
+  container.resolve(PrismaClient).$disconnect();
+  if (e instanceof Error) {
+    throw e;
+  } else {
+    throw new Error("Error starting client!");
+  }
+} 
