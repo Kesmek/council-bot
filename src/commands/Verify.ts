@@ -85,10 +85,19 @@ export class Verify {
 
     if (memberCount >= 150) {
       await member.roles.add(verifiedRole);
+      let nick = "";
       if (member.nickname) {
-        await member.setNickname(`${member.nickname.slice(0, member.nickname.length - 1)}, ${guildName})`);
+        nick = `${member.nickname.slice(0, member.nickname.length - 1)}, ${guildName})`;
+        if (nick.length > 32) {
+          nick = nick.slice(0, 29) + "...)";
+        }
+        await member.setNickname(nick);
       } else {
-        await member.setNickname(`${member.displayName} (${guildName})`);
+        nick = `${member.displayName} (${guildName})`;
+        if (nick.length > 32) {
+          nick = nick.slice(0, 29) + "...)";
+        }
+        await member.setNickname(nick);
       }
 
       // Send server info to appropriate channel (if another owner hasn't already)
