@@ -89,13 +89,13 @@ export class Verify {
       if (member.nickname) {
         nick = `${member.nickname.slice(0, member.nickname.length - 1)}, ${guildName})`;
         if (nick.length > 32) {
-          nick = nick.slice(0, 29) + "...)";
+          nick = nick.slice(0, 28) + "...)";
         }
         await member.setNickname(nick);
       } else {
         nick = `${member.displayName} (${guildName})`;
         if (nick.length > 32) {
-          nick = nick.slice(0, 29) + "...)";
+          nick = nick.slice(0, 28) + "...)";
         }
         await member.setNickname(nick);
       }
