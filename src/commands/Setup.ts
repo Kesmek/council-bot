@@ -56,28 +56,26 @@ export class Setup {
     serversChannel: TextChannel,
     interaction: CommandInteraction,
   ) {
-    if (interaction.guildId) {
-      await this._prisma.guild.update({
-        where: {
-          id: interaction.guildId,
-        },
-        data: {
-          moderationChannel: modChannel.id,
-          verifiedRole: verifiedRole.id,
-          blacklistChannel: blacklistChannel.id,
-          serversChannel: serversChannel.id
-        },
-      });
-      await InteractionUtils.replyOrFollowUp(interaction, {
-        content: "Bot successfully setup! All the bot commands should now function properly",
-        ephemeral: true,
-      });
-    } else {
-      await InteractionUtils.replyOrFollowUp(interaction, {
-        content: "Something went wrong, please try again later or contact the bot owner.",
-        ephemeral: true,
-      });
+    if (!interaction.inGuild()) {
+      throw new Error("Command must be used within a guild!");
     }
+    await interaction.deferReply({ ephemeral: true });
+
+    await this._prisma.guild.update({
+      where: {
+        id: interaction.guildId,
+      },
+      data: {
+        moderationChannel: modChannel.id,
+        verifiedRole: verifiedRole.id,
+        blacklistChannel: blacklistChannel.id,
+        serversChannel: serversChannel.id
+      },
+    });
+    await InteractionUtils.replyOrFollowUp(interaction, {
+      content: "Bot successfully setup! All the bot commands should now function properly",
+      ephemeral: true,
+    });
   }
 
   @Guard(IsSetup)
@@ -142,9 +140,14 @@ export class Setup {
     forumInvalidTag: string,
     interaction: CommandInteraction,
   ) {
+    if (!interaction.inGuild()) {
+      throw new Error("Command must be used within a guild!");
+    }
+    await interaction.deferReply({ ephemeral: true });
+
     await this._prisma.guild.update({
       where: {
-        id: interaction.guildId!,
+        id: interaction.guildId,
       },
       data: {
         forumPendingTagId: forumPendingTag,

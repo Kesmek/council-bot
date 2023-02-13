@@ -3,6 +3,7 @@ import { Discord, Slash } from "discordx";
 import { CommandActions, TimeUnit } from "../utils/Constants.js";
 import { Logger } from "../utils/Logger.js";
 import { injectable } from "tsyringe";
+import { InteractionUtils } from "../utils/Utils.js";
 
 @Discord()
 @injectable()
@@ -22,13 +23,18 @@ export class GenerateInvite {
     const { guild } = interaction;
     if (guild) {
       const { channels, roles } = guild;
-      const visibleChannel = channels.cache.find((ch) => ch.isTextBased() && !ch.isDMBased() && !ch.isVoiceBased() && ch.permissionsFor(roles.everyone).has(PermissionsBitField.Flags.ViewChannel)) as TextChannel;
+      const visibleChannel = channels.cache.find(
+        (ch) => ch.isTextBased()
+          && !ch.isDMBased()
+          && !ch.isVoiceBased()
+          && ch.permissionsFor(roles.everyone)
+            .has(PermissionsBitField.Flags.ViewChannel)) as TextChannel;
       const invite = await interaction.guild?.invites.create(visibleChannel!, {
         maxUses: 1,
         maxAge: TimeUnit.WEEK / 1000, // field takes time in seconds instead of milliseconds
         temporary: false,
       });
-      await interaction.reply({
+      await InteractionUtils.replyOrFollowUp(interaction, {
         content: `Please copy this invite link and send it to whomever you wish. It is single use and will last 1 week.\n*Note:* Inviting someone to this server is equivalent to you vouching for them. Ensure this person is someone you trust.\n\n${invite?.url}`,
         ephemeral: true,
       });

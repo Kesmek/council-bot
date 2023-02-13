@@ -104,6 +104,11 @@ export class Blacklist {
     additionalInfo: string | undefined,
     interaction: CommandInteraction,
   ) {
+    if (!interaction.inGuild()) {
+      throw new Error("Command must be used within a guild!");
+    }
+    await interaction.deferReply({ ephemeral: true });
+
     let title = "";
     let dUser: User | null = null;
     let vUser: VRC_User | null = null;
@@ -173,7 +178,7 @@ export class Blacklist {
     }
 
     // Get + check guild in DB (already checked by Guard on this class)
-    const guild = await DbUtils.getGuild(interaction.guildId!);
+    const guild = await DbUtils.getGuild(interaction.guildId);
     const blacklistChannel = await interaction.guild?.channels.fetch(guild.blacklistChannel!);
 
     // Only proceed if the blaklist channel is a forum channel

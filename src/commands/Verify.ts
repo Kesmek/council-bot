@@ -51,6 +51,8 @@ export class Verify {
     if (!interaction.inGuild()) {
       throw new Error("Command must be used within a guild!");
     }
+    await interaction.deferReply({ ephemeral: true });
+
     //Guaranteed exists because of the guard
     const guild = await DbUtils.getGuild(interaction.guildId);
     const { verifiedRole, serversChannel } = guild;
@@ -171,6 +173,7 @@ export class Verify {
     if (!interaction.inGuild()) {
       throw new Error("Command must be used within a guild!");
     }
+    await interaction.deferReply({ ephemeral: true });
 
     const guild = await DbUtils.getGuild(interaction.guildId);
     const { verifiedRole, serversChannel } = guild;
