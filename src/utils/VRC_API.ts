@@ -1,6 +1,7 @@
 import { singleton } from "tsyringe";
 import { Configuration, UsersApi, AuthenticationApi } from "vrchat";
 import { generateToken } from "node-2fa";
+import axios from "axios";
 
 // Step 1. We begin with creating a Configuration, which contains the username and password for authentication.
 const configuration = new Configuration({
@@ -8,6 +9,13 @@ const configuration = new Configuration({
   password: process.env.VRC_PASSWORD,
 });
 
+const axiosConfig = axios.create({
+  headers: {
+    "User-Agent": "Council-Bot/1.0.0 justin.scopelleti@gmail.com",
+    "Content-Type": "application/json",
+  },
+});
+axios.defaults.withCredentials = true;
 
 @singleton()
 export class VRC_UsersApi {
@@ -15,8 +23,8 @@ export class VRC_UsersApi {
   private usersApi: UsersApi;
 
   constructor() {
-    this.authApi = new AuthenticationApi(configuration);
-    this.usersApi = new UsersApi(configuration);
+    this.authApi = new AuthenticationApi(configuration, undefined, axiosConfig);
+    this.usersApi = new UsersApi(configuration, undefined, axiosConfig);
   }
 
   async get() {
