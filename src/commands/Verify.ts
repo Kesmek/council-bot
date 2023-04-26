@@ -16,9 +16,7 @@ import { Logger } from "../utils/Logger.js";
 @injectable()
 @Guard(IsSetup)
 export class Verify {
-  constructor(
-    private _logger: Logger,
-  ) { }
+  constructor(private _logger: Logger) {}
 
   @Slash({
     description: "Verify yourself as a server owner.",
@@ -46,9 +44,9 @@ export class Verify {
       required: false,
     })
     otherOwner: GuildMember | undefined,
-    interaction: CommandInteraction,
+    interaction: CommandInteraction
   ): Promise<void> {
-    if (!interaction.inGuild()) {
+    if (!interaction.inGuild() || !interaction.guild) {
       throw new Error("Command must be used within a guild!");
     }
     await interaction.deferReply({ ephemeral: true });
@@ -58,7 +56,9 @@ export class Verify {
     const { verifiedRole, serversChannel } = guild;
     const member = interaction.member as GuildMember;
     const rules = interaction.guild?.rulesChannel!;
-    const serverInfoChannel = await interaction.guild?.channels.fetch(serversChannel) as TextChannel;
+    const serverInfoChannel = (await interaction.guild?.channels.fetch(
+      serversChannel
+    )) as TextChannel;
 
     const invite = await interaction.client.fetchInvite(serverInvite);
     const inviteGuild = invite.guild as InviteGuild;
@@ -81,7 +81,7 @@ export class Verify {
         });
       } else {
         // Assume other owner has been verified correctly
-        await this.verifySuccess(interaction, member, verifiedRole, guildName)
+        await this.verifySuccess(interaction, member, verifiedRole, guildName);
       }
     }
 
@@ -89,7 +89,10 @@ export class Verify {
       await member.roles.add(verifiedRole);
       let nick = "";
       if (member.nickname) {
-        nick = `${member.nickname.slice(0, member.nickname.length - 1)}, ${guildName})`;
+        nick = `${member.nickname.slice(
+          0,
+          member.nickname.length - 1
+        )}, ${guildName})`;
         if (nick.length > 32) {
           nick = nick.slice(0, 28) + "...)";
         }
@@ -114,15 +117,26 @@ export class Verify {
         ephemeral: true,
       });
     } else {
-      let infoForAdmins = `__Info For Manual Verification__\n**Inviter:** ${GuildUtils.safeMention(inviter)}\n**Server Link:** ${invite.url}`;
+      let infoForAdmins = `__Info For Manual Verification__\n**Inviter:** ${GuildUtils.safeMention(
+        inviter
+      )}\n**Server Link:** ${invite.url}`;
 
       if (otherOwner) {
-        infoForAdmins += `\n**Other Owner:** ${GuildUtils.safeMention(otherOwner)}`;
+        infoForAdmins += `\n**Other Owner:** ${GuildUtils.safeMention(
+          otherOwner
+        )}`;
       }
 
-      await this._logger.warn(interaction, CommandActions.VerifyFail, "Their Server doesn't meet the 150 member minimum requirements", infoForAdmins);
+      await this._logger.warn(
+        interaction,
+        CommandActions.VerifyFail,
+        "Their Server doesn't meet the 150 member minimum requirements",
+        infoForAdmins
+      );
       return InteractionUtils.replyOrFollowUp(interaction, {
-        content: `Your server must have at least 150 members in it to verify. Please read the ${rules} and contact the admins (${GuildUtils.getAdmins(interaction)}) if you believe you are an exception.`,
+        content: `Your server must have at least 150 members in it to verify. Please read the ${rules} and contact the admins (${GuildUtils.getAdmins(
+          interaction.guild
+        )}) if you believe you are an exception.`,
         ephemeral: true,
       });
     }
@@ -130,7 +144,7 @@ export class Verify {
 
   @Slash({
     name: "force-verify",
-    description: "Verify a user without any of the safeguards"
+    description: "Verify a user without any of the safeguards",
   })
   async forceVerify(
     @SlashOption({
@@ -168,7 +182,7 @@ export class Verify {
       required: true,
     })
     shareInvite: boolean,
-    interaction: CommandInteraction,
+    interaction: CommandInteraction
   ): Promise<void> {
     if (!interaction.inGuild()) {
       throw new Error("Command must be used within a guild!");
@@ -180,7 +194,9 @@ export class Verify {
     const invite = await interaction.client.fetchInvite(serverInvite);
     const inviteGuild = invite.guild as InviteGuild;
     const { name: guildName } = inviteGuild;
-    const serverInfoChannel = await interaction.guild?.channels.fetch(serversChannel) as TextChannel;
+    const serverInfoChannel = (await interaction.guild?.channels.fetch(
+      serversChannel
+    )) as TextChannel;
 
     if (user.nickname?.includes(guildName)) {
       return await InteractionUtils.replyOrFollowUp(interaction, {
@@ -192,7 +208,10 @@ export class Verify {
     await user.roles.add(verifiedRole);
     let nick = "";
     if (user.nickname) {
-      nick = `${user.nickname.slice(0, user.nickname.length - 1)}, ${guildName})`;
+      nick = `${user.nickname.slice(
+        0,
+        user.nickname.length - 1
+      )}, ${guildName})`;
       if (nick.length > 32) {
         nick = nick.slice(0, 28) + "...)";
       }
@@ -211,18 +230,32 @@ export class Verify {
         content: invite.url,
       });
     }
-    await this._logger.warn(interaction, CommandActions.ForceVerify, reason, `\n**User Force Verified:** ${GuildUtils.safeMention(user)}\n**Inviter:** ${inviter}`);
+    await this._logger.warn(
+      interaction,
+      CommandActions.ForceVerify,
+      reason,
+      `\n**User Force Verified:** ${GuildUtils.safeMention(
+        user
+      )}\n**Inviter:** ${inviter}`
+    );
     return await InteractionUtils.replyOrFollowUp(interaction, {
       content: "The user has been force verified.",
       ephemeral: true,
     });
   }
 
-  private async verifySuccess(interaction: CommandInteraction, member: GuildMember, verifiedRoleId: string, guildName: string) {
+  private async verifySuccess(
+    interaction: CommandInteraction,
+    member: GuildMember,
+    verifiedRoleId: string,
+    guildName: string
+  ) {
     const rules = interaction.guild?.rulesChannel!;
     await member.roles.add(verifiedRoleId);
     if (member.nickname) {
-      await member.setNickname(`${member.nickname.slice(0, member.nickname.length - 1)}, ${guildName})`);
+      await member.setNickname(
+        `${member.nickname.slice(0, member.nickname.length - 1)}, ${guildName})`
+      );
     } else {
       await member.setNickname(`${member.displayName} (${guildName})`);
     }

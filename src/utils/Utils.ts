@@ -2,6 +2,7 @@ import {
   ButtonInteraction,
   Collection,
   CommandInteraction,
+  Guild,
   GuildMember,
   InteractionReplyOptions,
   MessageComponentInteraction,
@@ -9,12 +10,12 @@ import {
   User,
 } from "discord.js";
 import { container } from "tsyringe";
-import { Guild, PrismaClient } from "@prisma/client";
+import { Guild as PrismaGuild, PrismaClient } from "@prisma/client";
 
 export class InteractionUtils {
   public static async replyOrFollowUp(
     interaction: CommandInteraction | MessageComponentInteraction,
-    replyOptions: InteractionReplyOptions | string,
+    replyOptions: InteractionReplyOptions | string
   ): Promise<void> {
     // if interaction is already replied
     if (interaction.replied) {
@@ -34,18 +35,22 @@ export class InteractionUtils {
 }
 
 export class GuildUtils {
-  public static getAdmins(
-    interaction: CommandInteraction | ButtonInteraction,
-  ) {
-    return interaction.guild?.members.cache.filter((member) => !member.user.bot && member.permissions.has(
-      [PermissionsBitField.Flags.BanMembers])).toJSON();
+  public static getAdmins(guild: Guild) {
+    return guild.members.cache
+      .filter(
+        (member) =>
+          !member.user.bot &&
+          member.permissions.has([PermissionsBitField.Flags.BanMembers])
+      )
+      .toJSON();
   }
 
   public static stringifyMembers(members?: Collection<string, GuildMember>) {
     if (!members) {
       return "";
     }
-    return members?.map((member) => `${member.user} (${member.user.tag})`)
+    return members
+      ?.map((member) => `${member.user} (${member.user.tag})`)
       .join(", ");
   }
 
@@ -59,13 +64,15 @@ export class GuildUtils {
 }
 
 export class DbUtils {
-  public static async getGuild(guildId: string): Promise<NoOptionals<Guild>> {
+  public static async getGuild(
+    guildId: string
+  ): Promise<NoOptionals<PrismaGuild>> {
     const _prisma = container.resolve(PrismaClient);
-    return await _prisma.guild.findUniqueOrThrow({
+    return (await _prisma.guild.findUniqueOrThrow({
       where: {
         id: guildId,
-      }
-    }) as NoOptionals<Guild>;
+      },
+    })) as NoOptionals<PrismaGuild>;
   }
 }
 
