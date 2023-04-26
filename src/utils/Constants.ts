@@ -1,4 +1,5 @@
 export const enum CommandActions {
+  ForceResolve = "Resolution Forced",
   ForceVerify = "Verification Forced",
   Invite = "Invite Generated",
   Verify = "Verification Performed",

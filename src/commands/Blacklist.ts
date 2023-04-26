@@ -345,6 +345,12 @@ export class Blacklist {
       ephemeral: true,
     });
     await this.resolvePost(interaction.channel, score);
+    return await this._logger.warn(
+      interaction,
+      CommandActions.ForceResolve,
+      reason,
+      `**Blacklist:** <#${interaction.channel.id}>`
+    );
   }
 
   private async resolvePost(post: ThreadChannel, score: number): Promise<void> {
