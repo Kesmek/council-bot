@@ -13,19 +13,27 @@ import {
   ButtonBuilder,
   ButtonInteraction,
   ButtonStyle,
+  ChannelType,
   CommandInteraction,
   ForumChannel,
   MessageActionRowComponentBuilder,
+  MessageFlags,
+  ThreadChannel,
   User,
 } from "discord.js";
 import { DbUtils, GuildUtils, InteractionUtils } from "../utils/Utils.js";
 import { injectable } from "tsyringe";
 import { User as VRC_User } from "vrchat";
 import { IsForumSetup, IsSetup } from "../guards/IsSetup.js";
-import { BlacklistReasons, BotCreator, TimeUnit } from "../utils/Constants.js";
+import {
+  BlacklistReasons,
+  BotCreator,
+  CommandActions,
+  TimeUnit,
+} from "../utils/Constants.js";
 import { EnumChoice } from "@discordx/utilities";
 import { VRC_UsersApi } from "../utils/VRC_API.js";
-
+import { Logger } from "../utils/Logger.js";
 
 @Discord()
 @injectable()
@@ -35,7 +43,8 @@ export class Blacklist {
   constructor(
     private _client: Client,
     private _VRC_UsersApi: VRC_UsersApi,
-  ) { }
+    private _logger: Logger
+  ) {}
 
   @Slash({ name: "blacklist", description: "Blacklist a user" })
   public async blacklist(
@@ -56,25 +65,29 @@ export class Blacklist {
     anonymous: boolean,
     @SlashOption({
       name: "evidence-link",
-      description: "A link to an online document containing evidence corroborating the blacklist",
+      description:
+        "A link to an online document containing evidence corroborating the blacklist",
       type: ApplicationCommandOptionType.String,
     })
     evidenceLink: string | undefined,
     @SlashOption({
       name: "evidence-file-1",
-      description: "Either a link to a google doc containing the evidenceFile1 or images/videos of the evidenceFile1",
+      description:
+        "Either a link to a google doc containing the evidenceFile1 or images/videos of the evidenceFile1",
       type: ApplicationCommandOptionType.Attachment,
     })
     evidenceFile1: Attachment | undefined,
     @SlashOption({
       name: "evidence-file-2",
-      description: "Additional source of evidenceFile1 to corroborate the blacklist",
+      description:
+        "Additional source of evidenceFile1 to corroborate the blacklist",
       type: ApplicationCommandOptionType.Attachment,
     })
     evidenceFile2: Attachment | undefined,
     @SlashOption({
       name: "evidence-file-3",
-      description: "Additional source of evidenceFile1 to corroborate the blacklist",
+      description:
+        "Additional source of evidenceFile1 to corroborate the blacklist",
       type: ApplicationCommandOptionType.Attachment,
     })
     evidenceFile3: Attachment | undefined,
@@ -102,7 +115,7 @@ export class Blacklist {
       type: ApplicationCommandOptionType.String,
     })
     additionalInfo: string | undefined,
-    interaction: CommandInteraction,
+    interaction: CommandInteraction
   ) {
     if (!interaction.inGuild()) {
       throw new Error("Command must be used within a guild!");
@@ -112,14 +125,16 @@ export class Blacklist {
     let title = "";
     let dUser: User | null = null;
     let vUser: VRC_User | null = null;
-    const admins = GuildUtils.getAdmins(interaction);
 
-    const submitter = anonymous ? "Anonymous" : GuildUtils.safeMention(interaction.user);
+    const submitter = anonymous
+      ? "Anonymous"
+      : GuildUtils.safeMention(interaction.user);
 
-    // Ensure at least one form of identification is provided 
+    // Ensure at least one form of identification is provided
     if (!discordId && !vrcLink) {
       return await InteractionUtils.replyOrFollowUp(interaction, {
-        content: "Either a discord ID or a link to their VRC profile is required!",
+        content:
+          "Either a discord ID or a link to their VRC profile is required!",
         ephemeral: true,
       });
     }
@@ -127,7 +142,8 @@ export class Blacklist {
     // Ensure at least one piece of evidence is provided
     if (!(evidenceLink || evidenceFile1 || evidenceFile2 || evidenceFile3)) {
       return await InteractionUtils.replyOrFollowUp(interaction, {
-        content: "At least one piece of evidence (linked or images/videos) is required!",
+        content:
+          "At least one piece of evidence (linked or images/videos) is required!",
         ephemeral: true,
       });
     }
@@ -153,9 +169,13 @@ export class Blacklist {
         if (vrcLink.endsWith("/")) {
           link = vrcLink.slice(0, vrcLink.length - 1);
         }
-        const response = await (await this._VRC_UsersApi.get()).getUser(link.split("/").at(-1)!);
+        const response = await (
+          await this._VRC_UsersApi.get()
+        ).getUser(link.split("/").at(-1)!);
         vUser = response.data;
-        title += title ? `, VRChat: ${vUser.displayName}` : `VRChat: ${vUser.displayName}`;
+        title += title
+          ? `, VRChat: ${vUser.displayName}`
+          : `VRChat: ${vUser.displayName}`;
       } catch (e) {
         console.error(e);
         return await InteractionUtils.replyOrFollowUp(interaction, {
@@ -179,16 +199,27 @@ export class Blacklist {
 
     // Get + check guild in DB (already checked by Guard on this class)
     const guild = await DbUtils.getGuild(interaction.guildId);
-    const blacklistChannel = await interaction.guild?.channels.fetch(guild.blacklistChannel!);
+    const blacklistChannel = await interaction.guild?.channels.fetch(
+      guild.blacklistChannel!
+    );
 
     // Only proceed if the blaklist channel is a forum channel
     if (blacklistChannel instanceof ForumChannel) {
-      const formattedContent = this.formatBlacklist(submitter, dUser, vUser, evidenceLink, otherAccounts, additionalInfo);
+      const formattedContent = this.formatBlacklist(
+        submitter,
+        dUser,
+        vUser,
+        evidenceLink,
+        otherAccounts,
+        additionalInfo
+      );
       const pendingTag = guild.forumPendingTagId!;
       const invalidTag = guild.forumInvalidTagId!;
       const validTag = guild.forumValidTagId!;
       const tags = blacklistChannel.availableTags
-        .filter((tag) => tag.name.toLowerCase() === reason || tag.id === pendingTag)
+        .filter(
+          (tag) => tag.name.toLowerCase() === reason || tag.id === pendingTag
+        )
         .map((tag) => tag.id);
 
       const post = await blacklistChannel.threads.create({
@@ -197,67 +228,70 @@ export class Blacklist {
           content: formattedContent,
           files: evidenceFiles,
         },
-        appliedTags: tags
+        appliedTags: tags,
       });
 
-      const row = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(
-        new ButtonBuilder()
-          .setCustomId("validate")
-          .setLabel("Validate")
-          .setStyle(ButtonStyle.Success),
-        new ButtonBuilder()
-          .setCustomId("invalidate")
-          .setLabel("Invalidate")
-          .setStyle(ButtonStyle.Danger)
-      );
+      const row =
+        new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(
+          new ButtonBuilder()
+            .setCustomId("validate")
+            .setLabel("Validate")
+            .setStyle(ButtonStyle.Success),
+          new ButtonBuilder()
+            .setCustomId("invalidate")
+            .setLabel("Invalidate")
+            .setStyle(ButtonStyle.Danger)
+        );
+
+      const validateVotes = new Set<string>(),
+        invalidateVotes = new Set<string>();
 
       const voteMessage = `Please vote as to whether this post should be validated as a confirmed blacklist.\n\n*Note:* This thread will be automatically validated if the positive votes outnumber the negative ones. If the negative votes outnumber the positive ones, this post will be automatically marked invalid.`;
       const followup = await post.send({
-        content: voteMessage,
+        content: `${voteMessage}\n\nValidate: ${validateVotes.size}\nInvalidate: ${invalidateVotes.size}`,
         components: [row],
       });
+      await followup.pin();
 
-      const validateVotes = new Set<string>(), invalidateVotes = new Set<string>();
-      const collector = followup.createMessageComponentCollector({ idle: TimeUnit.DAY * 2 });
-      collector.on("collect", async (collectorInteraction: ButtonInteraction) => {
-        const userId = collectorInteraction.user.id;
-
-        const skipValidate = validateVotes.delete(userId);
-        const skipInvalidate = invalidateVotes.delete(userId);
-
-        switch (collectorInteraction.customId) {
-          case "validate": {
-            if (!skipValidate) {
-              validateVotes.add(userId);
-            }
-            break;
-          }
-          case "invalidate": {
-            if (!skipInvalidate) {
-              invalidateVotes.add(userId);
-            }
-            break;
-          }
-        }
-
-        await collectorInteraction.update({
-          content: `${voteMessage}\n\nValidate: ${validateVotes.size}\nInvalidate: ${invalidateVotes.size}`,
-        });
+      const collector = followup.createMessageComponentCollector({
+        idle: TimeUnit.DAY * 2,
       });
+      collector.on(
+        "collect",
+        async (collectorInteraction: ButtonInteraction) => {
+          const userId = collectorInteraction.user.id;
+
+          const skipValidate = validateVotes.delete(userId);
+          const skipInvalidate = invalidateVotes.delete(userId);
+
+          switch (collectorInteraction.customId) {
+            case "validate": {
+              if (!skipValidate) {
+                validateVotes.add(userId);
+              }
+              break;
+            }
+            case "invalidate": {
+              if (!skipInvalidate) {
+                invalidateVotes.add(userId);
+              }
+              break;
+            }
+          }
+
+          await collectorInteraction.update({
+            content: `${voteMessage}\n\nValidate: ${validateVotes.size}\nInvalidate: ${invalidateVotes.size}`,
+          });
+        }
+      );
 
       collector.on("end", async () => {
-        await followup.delete();
-        await post.send({
-          content: `This post has been validated. If you disagree with this decision, please contact an admin: ${admins}`,
-        });
-        if (validateVotes.size > invalidateVotes.size) {
-          await post.edit({
-            appliedTags: [...tags, validTag].filter((tag) => tag !== pendingTag),
-          });
-        } else {
-          await post.edit({
-            appliedTags: [...tags, invalidTag].filter((tag) => tag !== pendingTag),
-          });
+        try {
+          await followup.delete();
+          const score = validateVotes.size - invalidateVotes.size;
+          await this.resolvePost(post, score);
+        } catch (e) {
+          console.warn("Message already deleted");
         }
       });
 
@@ -267,10 +301,73 @@ export class Blacklist {
       });
     } else {
       return await InteractionUtils.replyOrFollowUp(interaction, {
-        content: "Target channel is not a forum channel. Please rerun the setup-forums command.",
+        content:
+          "Target channel is not a forum channel. Please rerun the setup-forums command.",
         ephemeral: true,
       });
     }
+  }
+
+  @Slash({
+    name: "force-resolve",
+    description: "Force the post to be resolved early",
+  })
+  public async forceResolve(
+    @SlashOption({
+      name: "reason",
+      description: "Why this post is being force-resolved",
+      type: ApplicationCommandOptionType.String,
+      required: true,
+    })
+    reason: string,
+    interaction: CommandInteraction
+  ) {
+    if (
+      !interaction.inGuild() ||
+      interaction.channel?.type !== ChannelType.PublicThread
+    ) {
+      return;
+    }
+
+    const messages = await interaction.channel.messages.fetchPinned();
+    const voteMessage = messages.find(
+      (mes) => mes.author.id === interaction.client.user.id
+    );
+    const votes = voteMessage?.content.match(/\d+/g);
+    const scores = votes?.map((num) => parseInt(num));
+    if (!scores || Number.isNaN(scores[0]) || Number.isNaN(scores[1])) {
+      return;
+    }
+    const score = scores[0] - scores[1];
+    await voteMessage?.delete();
+    await InteractionUtils.replyOrFollowUp(interaction, {
+      content: "Post force-resolved.",
+      ephemeral: true,
+    });
+    await this.resolvePost(interaction.channel, score);
+  }
+
+  private async resolvePost(post: ThreadChannel, score: number): Promise<void> {
+    const admins = GuildUtils.getAdmins(post.guild);
+    const guild = await DbUtils.getGuild(post.guildId);
+    const pendingTag = guild.forumPendingTagId;
+    const invalidTag = guild.forumInvalidTagId;
+    const validTag = guild.forumValidTagId;
+    let postTags = post.appliedTags.filter((tag) => tag !== pendingTag);
+
+    // Add (in)validTag based on the score
+    postTags.push(score > 0 ? validTag : invalidTag);
+
+    await post.send({
+      content: `this post has been resolved. if you disagree with this decision, please contact an admin: ${admins}`,
+      flags: MessageFlags.SuppressNotifications,
+    });
+    await post.edit({
+      appliedTags: postTags,
+      archived: true,
+      locked: true,
+      reason: "Resolved",
+    });
   }
 
   private formatBlacklist(
