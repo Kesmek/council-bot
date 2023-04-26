@@ -365,7 +365,7 @@ export class Blacklist {
     postTags.push(score > 0 ? validTag : invalidTag);
 
     await post.send({
-      content: `this post has been resolved. if you disagree with this decision, please contact an admin: ${admins}`,
+      content: `This post has been resolved. if you disagree with this decision, please contact an admin: ${admins}`,
       flags: MessageFlags.SuppressNotifications,
     });
     await post.edit({
